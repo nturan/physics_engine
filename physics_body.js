@@ -129,3 +129,5 @@ class PhysicsBody {
             [0.0, 0.0, 1.0]])
     }
 }
+
+export {PhysicsBody};
