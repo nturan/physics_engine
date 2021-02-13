@@ -37,7 +37,7 @@ class PhysicsBody {
 
     ApplyForce(force){
         this.force.x += force.x;
-        this.force.x += force.y;
+        this.force.y += force.y;
         this.force.z += force.z;
     }
 
@@ -130,12 +130,12 @@ class PhysicsBody {
     }
 }
 
-let turan = new PhysicsBody(63.4, {x: 0.0, y: 0.0, z: 0.0}, {x: 0.0, y: 0.0, z: 0.0});
+let turan = new PhysicsBody(1.0, {x: 0.0, y: 0.0, z: 0.0}, {x: 0.0, y: 0.0, z: 0.0});
 
 
-turan.force = {x: 0.0, y: -1.0, z: 0.0};
+turan.ApplyForce({x: 0.0, y: -1.0, z: 0.0})
 for (let i=0; i<100; i++){
-    turan.force = {x: 0.0, y: -1.0, z: 0.0};
+    turan.ApplyTorque({x: 0.0, y: -1.0, z: 0.0})
     turan.UpdateStateVector(0.0, 0.0001);
-    console.log(turan.velocity);
+    console.log(turan.quaternion);
 }
