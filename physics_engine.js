@@ -67,8 +67,8 @@ class PhysicsBody {
         this.torque.z += torque.z;
     }
 
-    UpdatePositionalState(t, step){
-        this.positional_state = Integrator.rk4(
+    UpdatePositionalState(t, step, integrator){
+        this.positional_state = integrator(
             this.DifferentialPositionalState.bind(this),
             this.positional_state, t, step, []);
 
@@ -95,8 +95,8 @@ class PhysicsBody {
         this.torque = {x: 0.0, y: 0.0, z: 0.0};
     }
 
-    UpdateRotationalState(t, step){
-        this.rotational_state = Integrator.rk4(
+    UpdateRotationalState(t, step, integrator){
+        this.rotational_state = integrator(
             this.DifferentialRotationalState.bind(this),
             this.rotational_state, t, step, []);
 
@@ -143,9 +143,9 @@ class PhysicsBody {
         this.torque = {x: 0.0, y: 0.0, z: 0.0};
     }
 
-    UpdateStateVector(t, step){
+    UpdateStateVector(t, step, integrator){
         //let arg = [];
-        this.state_vector = Integrator.rk4(this.dxdt.bind(this), this.state_vector, t, step, []);
+        this.state_vector = integrator(this.dxdt.bind(this), this.state_vector, t, step, []);
     
         let newQ = new THREE.Quaternion(this.state_vector._data[6], 
                                         this.state_vector._data[7],
