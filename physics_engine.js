@@ -253,7 +253,7 @@ class PhysicsBody {
     }
 };
 
-Integrator = {
+let Integrator = {
 
     euler: function (fun, x, t, step, arg) {
       let k1 = fun(t, x, arg);
