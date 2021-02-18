@@ -15,30 +15,10 @@ class PhysicsBody {
         this.w = {x: 0.0, y: 0.0, z: 0.0};
         this.L = math.multiply(this.inertia_tensor, 
             [[this.w.x],
-            [this.w.y],
-            [this.w.z]]);
+             [this.w.y],
+             [this.w.z]]);
         this.euler = new THREE.Euler();
         this.euler.setFromQuaternion(this.quaternion);
-        // write positional and rotational state vectors...
-        this.positional_state = math.matrix([
-            this.position.x, 
-            this.position.y, 
-            this.position.z,
-            this.velocity.x*this.mass, 
-            this.velocity.y*this.mass, 
-            this.velocity.z*this.mass,
-        ]);
-
-        this.rotational_state = math.matrix([
-            this.quaternion.x, 
-            this.quaternion.y, 
-            this.quaternion.z,
-            this.quaternion.w,
-            this.L._data[0][0], 
-            this.L._data[1][0], 
-            this.L._data[2][0]
-        ]);
-
         this.state_vector = math.matrix([this.position.x, 
                                         this.position.y, 
                                         this.position.z,
@@ -68,52 +48,71 @@ class PhysicsBody {
     }
 
     UpdatePositionalState(t, step, integrator){
-        this.positional_state = integrator(
+        let positional_state = math.matrix([
+            this.state_vector._data[0],
+            this.state_vector._data[1],
+            this.state_vector._data[2],
+            this.state_vector._data[3],
+            this.state_vector._data[4],
+            this.state_vector._data[5], 0, 0, 0, 0, 0, 0, 0
+        ]);
+        positional_state = integrator(
             this.DifferentialPositionalState.bind(this),
-            this.positional_state, t, step, []);
+            positional_state, t, step, []);
 
         this.state_vector = math.matrix([
-            this.positional_state._data[0],
-            this.positional_state._data[1],
-            this.positional_state._data[2],
-            this.positional_state._data[3],
-            this.positional_state._data[4],
-            this.positional_state._data[5],
-            this.rotational_state._data[0],
-            this.rotational_state._data[1],
-            this.rotational_state._data[2],
-            this.rotational_state._data[3],
-            this.rotational_state._data[4],
-            this.rotational_state._data[5],
-            this.rotational_state._data[6]])
+            positional_state._data[0],
+            positional_state._data[1],
+            positional_state._data[2],
+            positional_state._data[3],
+            positional_state._data[4],
+            positional_state._data[5],
+            this.state_vector._data[6],
+            this.state_vector._data[7],
+            this.state_vector._data[8],
+            this.state_vector._data[9],
+            this.state_vector._data[10],
+            this.state_vector._data[11],
+            this.state_vector._data[12]]);
         this.position = {x: this.state_vector._data[0], 
                          y: this.state_vector._data[1], 
                          z: this.state_vector._data[2]};
         let vel = this.CalculateVelocity(this.state_vector);
         this.velocity = {x: vel[0], y: vel[1], z: vel[2]};
         this.force = {x: 0.0, y: 0.0, z: 0.0};
-        this.torque = {x: 0.0, y: 0.0, z: 0.0};
     }
 
     UpdateRotationalState(t, step, integrator){
-        this.rotational_state = integrator(
+        let rotational_state = math.matrix([
+            0, 0, 0, 0, 0, 0,
+            this.state_vector._data[6],
+            this.state_vector._data[7],
+            this.state_vector._data[8],
+            this.state_vector._data[9],
+            this.state_vector._data[10],
+            this.state_vector._data[11],
+            this.state_vector._data[12]
+        ]);
+
+        rotational_state = integrator(
             this.DifferentialRotationalState.bind(this),
-            this.rotational_state, t, step, []);
+            rotational_state, t, step, []);
 
         this.state_vector = math.matrix([
-            this.positional_state._data[0],
-            this.positional_state._data[1],
-            this.positional_state._data[2],
-            this.positional_state._data[3],
-            this.positional_state._data[4],
-            this.positional_state._data[5],
-            this.rotational_state._data[0],
-            this.rotational_state._data[1],
-            this.rotational_state._data[2],
-            this.rotational_state._data[3],
-            this.rotational_state._data[4],
-            this.rotational_state._data[5],
-            this.rotational_state._data[6]])
+            this.state_vector._data[0],
+            this.state_vector._data[1],
+            this.state_vector._data[2],
+            this.state_vector._data[3],
+            this.state_vector._data[4],
+            this.state_vector._data[5],
+            rotational_state._data[6],
+            rotational_state._data[7],
+            rotational_state._data[8],
+            rotational_state._data[9],
+            rotational_state._data[10],
+            rotational_state._data[11],
+            rotational_state._data[12]]);
+
         let newQ = new THREE.Quaternion(this.state_vector._data[6], 
                                         this.state_vector._data[7],
                                         this.state_vector._data[8], 
@@ -122,15 +121,9 @@ class PhysicsBody {
     
         this.quaternion = newQ;
         this.state_vector.subset(math.index([6, 7, 8, 9]), [newQ.x, 
-                                                           newQ.y, 
-                                                           newQ.z, 
-                                                           newQ.w]);
-    
-        //this.position = {x: this.state_vector._data[0], 
-        //                 y: this.state_vector._data[1], 
-        //                 z: this.state_vector._data[2]};
-        //let vel = this.CalculateVelocity(this.state_vector);
-        //this.velocity = {x: vel[0], y: vel[1], z: vel[2]};
+                                                            newQ.y, 
+                                                            newQ.z, 
+                                                            newQ.w]);
         
         this.euler.setFromQuaternion(newQ);
         let wQ = this.CalculateW(this.state_vector);
@@ -139,73 +132,21 @@ class PhysicsBody {
                               [this.state_vector._data[11]], 
                               [this.state_vector._data[12]]]);
         
-        this.force = {x: 0.0, y: 0.0, z: 0.0};
+
         this.torque = {x: 0.0, y: 0.0, z: 0.0};
     }
 
     UpdateStateVector(t, step, integrator){
-        //let arg = [];
-        this.state_vector = integrator(this.dxdt.bind(this), this.state_vector, t, step, []);
-    
-        let newQ = new THREE.Quaternion(this.state_vector._data[6], 
-                                        this.state_vector._data[7],
-                                        this.state_vector._data[8], 
-                                        this.state_vector._data[9]);
-        newQ.normalize();
-    
-        this.quaternion = newQ;
-        this.state_vector.subset(math.index([6, 7, 8, 9]), [newQ.x, 
-                                                           newQ.y, 
-                                                           newQ.z, 
-                                                           newQ.w]);
-    
-        this.position = {x: this.state_vector._data[0], 
-                         y: this.state_vector._data[1], 
-                         z: this.state_vector._data[2]};
-        let vel = this.CalculateVelocity(this.state_vector);
-        this.velocity = {x: vel[0], y: vel[1], z: vel[2]};
-        
-        this.euler.setFromQuaternion(newQ);
-        let wQ = this.CalculateW(this.state_vector);
-        this.w = {x: wQ.x, y: wQ.y, z: wQ.z};
-        this.L = math.matrix([[this.state_vector._data[10]], 
-                              [this.state_vector._data[11]], 
-                              [this.state_vector._data[12]]]);
-        
-        this.force = {x: 0.0, y: 0.0, z: 0.0};
-        this.torque = {x: 0.0, y: 0.0, z: 0.0};
-    }
-
-    dxdt(t, x, arg){
-        let F = this.force;
-        let tau = this.torque;
-        let v = this.CalculateVelocity(x); // return as array
-        let w = this.CalculateW(x); //return as three.js quaternion
-    
-    
-        let q = new THREE.Quaternion(x._data[6], x._data[7],
-                                     x._data[8], x._data[9]);
-    
-    
-    
-    
-        q.normalize();
-        let qs = new THREE.Quaternion();
-        qs.multiplyQuaternions(q, w);
-    //    qs.normalize();
-        let res = math.matrix([v[0], v[1], v[2], //velocity
-                            F.x, F.y, F.z, // linear momentum
-                            1/2*qs.x, 1/2*qs.y, 1/2*qs.z, 1/2*qs.w, //rotation
-                            tau.x, tau.y, tau.z //angular momentum
-                           ]);
-        return res;
+        this.UpdatePositionalState(t, step, integrator);
+        this.UpdateRotationalState(t, step, integrator);
     }
 
     DifferentialPositionalState(t, x, arg){
         let F = this.force;
         let v = this.CalculateVelocity(x); // return as array
         let res = math.matrix([v[0], v[1], v[2], //velocity
-                            F.x, F.y, F.z // linear momentum
+                            F.x, F.y, F.z, // linear momentum
+                            0, 0, 0, 0, 0, 0, 0
                            ]);
         return res;
     }
@@ -213,7 +154,7 @@ class PhysicsBody {
     DifferentialRotationalState(t, x, arg){
         let tau = this.torque;
         let w = this.CalculateW(x); //return as three.js quaternion
-    
+        // let w = this.w;
     
         let q = new THREE.Quaternion(x._data[6], x._data[7],
                                      x._data[8], x._data[9]);
@@ -222,10 +163,8 @@ class PhysicsBody {
         let qs = new THREE.Quaternion();
         qs.multiplyQuaternions(q, w);
     //    qs.normalize();
-        let res = math.matrix([
-                            1/2*qs.x, 1/2*qs.y, 1/2*qs.z, 1/2*qs.w, //rotation
-                            tau.x, tau.y, tau.z //angular momentum
-                           ]);
+    
+        let res = math.matrix([0, 0, 0, 0, 0, 0, 1/2*qs.x, 1/2*qs.y, 1/2*qs.z, 1/2*qs.w, tau.x, tau.y, tau.z ]);
         return res;
     }
 
